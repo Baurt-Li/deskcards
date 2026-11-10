@@ -1,0 +1,248 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="悬浮卡片" Width="356" Height="278"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False"
+        ResizeMode="NoResize" FontFamily="YouYuan, Microsoft YaHei UI, Segoe UI" FontSize="14" Language="zh-CN"
+        Foreground="#F1F1E9" UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="Grayscale"
+        Stylus.IsPressAndHoldEnabled="False" Stylus.IsFlicksEnabled="False">
+  <Window.Resources>
+    <Style x:Key="WindowGrip" TargetType="Border">
+      <Setter Property="Width" Value="88"/>
+      <Setter Property="Height" Value="25"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Top"/>
+      <Setter Property="Cursor" Value="SizeAll"/>
+      <Setter Property="ToolTip" Value="拖住横条移动卡片"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Tag" Value="move"/>
+    </Style>
+    <Style x:Key="ComposerButton" TargetType="Button">
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="1" CornerRadius="11" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Opacity" Value=".82"/></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Opacity" Value=".67"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#628B50"/></Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value=".36"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="DoneToggle" TargetType="CheckBox">
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <StackPanel Orientation="Horizontal" Background="Transparent" Height="44">
+              <Grid Width="28" Margin="0,0,7,0">
+                <Border x:Name="Box" Width="23" Height="23" CornerRadius="7" Background="#180F1610" BorderThickness="1.5" BorderBrush="#46582D"/>
+                <Path x:Name="Tick" Width="12" Height="10" Stretch="Fill" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M 0,5 L 4,9 L 12,0" Stroke="#DCE5CE" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="Collapsed"/>
+              </Grid>
+              <ContentPresenter VerticalAlignment="Center" Margin="0,0,12,0"/>
+            </StackPanel>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True"><Setter TargetName="Box" Property="Background" Value="#454B3E"/><Setter TargetName="Box" Property="BorderBrush" Value="#69725E"/><Setter TargetName="Tick" Property="Visibility" Value="Visible"/></Trigger>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Box" Property="BorderThickness" Value="2.5"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#F6FFF0"/><Setter TargetName="Box" Property="BorderThickness" Value="2.5"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <DataTemplate x:Key="TaskCard">
+      <Border x:Name="Card" Background="#D9F982" CornerRadius="18">
+        <Grid>
+          <Path x:Name="Artwork" Data="M 9,77 L 68,18 L 127,77 L 68,136 Z M 0,37 L 37,0 L 74,37 L 37,74 Z"
+                Width="128" Height="136" Stretch="Uniform" Stroke="#243324" StrokeThickness="6" Opacity=".12"
+                HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,20,15,0" IsHitTestVisible="False"/>
+          <Grid Margin="19,12,16,10">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <DockPanel Height="37">
+              <Border x:Name="StatusBadge" Background="#2016221A" CornerRadius="9" Padding="9,4"
+                      HorizontalAlignment="Left" VerticalAlignment="Center">
+                <TextBlock x:Name="TaskStatus" Text="未完成" Foreground="#334037" FontSize="12"/>
+              </Border>
+            </DockPanel>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" VerticalAlignment="Center" Margin="1,4,6,4">
+              <TextBlock x:Name="TaskTitle" Text="{Binding Title}" TextWrapping="Wrap" Foreground="#202719"
+                         FontSize="24" FontWeight="SemiBold" LineHeight="32"/>
+            </ScrollViewer>
+            <CheckBox x:Name="Complete" Grid.Row="2" Style="{StaticResource DoneToggle}" HorizontalAlignment="Left" Foreground="#334037"
+                      IsChecked="{Binding Done, Mode=TwoWay}" Content="标为完成"/>
+          </Grid>
+          <Border Style="{StaticResource WindowGrip}">
+            <Border x:Name="GripMark" Width="34" Height="4" CornerRadius="2" HorizontalAlignment="Center"
+                    VerticalAlignment="Center" Background="#49313A30"/>
+          </Border>
+        </Grid>
+      </Border>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding Theme}" Value="2">
+          <Setter TargetName="Card" Property="Background" Value="#A6E9FC"/>
+          <Setter TargetName="Artwork" Property="Data" Value="M 0,45 C 24,15 41,15 64,45 S 105,75 128,45 M 0,72 C 24,42 41,42 64,72 S 105,102 128,72 M 0,99 C 24,69 41,69 64,99 S 105,129 128,99"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Theme}" Value="3">
+          <Setter TargetName="Card" Property="Background" Value="#FFD39E"/>
+          <Setter TargetName="Artwork" Property="Data" Value="M 64,9 A 59,59 0 1 1 63.9,9 Z M 64,27 A 41,41 0 1 1 63.9,27 Z M 64,45 A 23,23 0 1 1 63.9,45 Z"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Theme}" Value="4">
+          <Setter TargetName="Card" Property="Background" Value="#DCCBFF"/>
+          <Setter TargetName="Artwork" Property="Data" Value="M 13,25 H 119 M 13,52 H 119 M 13,79 H 119 M 13,106 H 119 M 25,13 V 119 M 52,13 V 119 M 79,13 V 119 M 106,13 V 119"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Done}" Value="True">
+          <Setter TargetName="Card" Property="Background" Value="#292D27"/>
+          <Setter TargetName="Artwork" Property="Stroke" Value="#B4BBAD"/>
+          <Setter TargetName="GripMark" Property="Background" Value="#9BA697"/>
+          <Setter TargetName="TaskTitle" Property="Foreground" Value="#B4BBAD"/>
+          <Setter TargetName="TaskTitle" Property="TextDecorations" Value="Strikethrough"/>
+          <Setter TargetName="TaskStatus" Property="Text" Value="已完成"/>
+          <Setter TargetName="TaskStatus" Property="Foreground" Value="#A4AE9B"/>
+          <Setter TargetName="StatusBadge" Property="Background" Value="#394236"/>
+          <Setter TargetName="Complete" Property="Content" Value="撤销完成"/>
+          <Setter TargetName="Complete" Property="Foreground" Value="#C8D0BE"/>
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+    <DataTemplate x:Key="FanCard">
+      <Border x:Name="Face" Background="#D9F982" BorderBrush="#24344235" BorderThickness="1" CornerRadius="18"
+              Cursor="Hand" Height="232" Margin="0,0,0,-158">
+        <Grid>
+          <Path x:Name="FanArtwork" Data="M 9,77 L 68,18 L 127,77 L 68,136 Z M 0,37 L 37,0 L 74,37 L 37,74 Z"
+                Width="108" Height="136" Stretch="Uniform" Stroke="#243324" StrokeThickness="6" Opacity=".14"
+                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,9,22,0" IsHitTestVisible="False"/>
+          <Grid Margin="18,0,17,0" Height="74" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="FanTitle" Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                       Foreground="#202719" FontSize="18" FontWeight="SemiBold" Margin="0,0,12,0"/>
+            <Border x:Name="FanBadge" Grid.Column="1" Background="#2016221A" CornerRadius="9" Padding="8,4" VerticalAlignment="Center">
+              <TextBlock x:Name="FanStatus" Foreground="#334037" FontSize="12" Text="未完成"/>
+            </Border>
+          </Grid>
+        </Grid>
+      </Border>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding Theme}" Value="2">
+          <Setter TargetName="Face" Property="Background" Value="#A6E9FC"/>
+          <Setter TargetName="FanArtwork" Property="Data" Value="M 0,45 C 24,15 41,15 64,45 S 105,75 128,45 M 0,72 C 24,42 41,42 64,72 S 105,102 128,72 M 0,99 C 24,69 41,69 64,99 S 105,129 128,99"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Theme}" Value="3">
+          <Setter TargetName="Face" Property="Background" Value="#FFD39E"/>
+          <Setter TargetName="FanArtwork" Property="Data" Value="M 64,9 A 59,59 0 1 1 63.9,9 Z M 64,27 A 41,41 0 1 1 63.9,27 Z M 64,45 A 23,23 0 1 1 63.9,45 Z"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Theme}" Value="4">
+          <Setter TargetName="Face" Property="Background" Value="#DCCBFF"/>
+          <Setter TargetName="FanArtwork" Property="Data" Value="M 13,25 H 119 M 13,52 H 119 M 13,79 H 119 M 13,106 H 119 M 25,13 V 119 M 52,13 V 119 M 79,13 V 119 M 106,13 V 119"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Done}" Value="True">
+          <Setter TargetName="Face" Property="Background" Value="#292D27"/>
+          <Setter TargetName="Face" Property="BorderBrush" Value="#576052"/>
+          <Setter TargetName="FanArtwork" Property="Stroke" Value="#B4BBAD"/>
+          <Setter TargetName="FanBadge" Property="Background" Value="#394236"/>
+          <Setter TargetName="FanStatus" Property="Text" Value="已完成"/>
+          <Setter TargetName="FanStatus" Property="Foreground" Value="#A4AE9B"/>
+          <Setter TargetName="FanTitle" Property="Foreground" Value="#B4BBAD"/>
+          <Setter TargetName="FanTitle" Property="TextDecorations" Value="Strikethrough"/>
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+  </Window.Resources>
+  <Grid x:Name="DockSurface" ClipToBounds="True">
+  <Grid x:Name="SwipeArea" ClipToBounds="True" Focusable="True" FocusVisualStyle="{x:Null}">
+    <Grid.RenderTransform><TranslateTransform/></Grid.RenderTransform>
+    <Grid x:Name="Deck" Height="278" VerticalAlignment="Top">
+      <Border x:Name="StackBack" Background="#484C47" CornerRadius="18" Margin="24,16,24,0"/>
+      <Border x:Name="StackMiddle" Background="#737972" CornerRadius="18" Margin="12,8,12,7"/>
+      <Grid x:Name="PullPreview" VerticalAlignment="Top" ClipToBounds="True"
+            IsHitTestVisible="False" Visibility="Collapsed">
+        <ContentControl x:Name="PeekBack" Margin="12,0,12,0" VerticalAlignment="Top"
+                        HorizontalContentAlignment="Stretch" ContentTemplate="{StaticResource FanCard}"/>
+        <ContentControl x:Name="PeekNear" Margin="6,0,6,0" VerticalAlignment="Top"
+                        HorizontalContentAlignment="Stretch" ContentTemplate="{StaticResource FanCard}">
+          <ContentControl.RenderTransform><TranslateTransform/></ContentControl.RenderTransform>
+        </ContentControl>
+      </Grid>
+      <Border x:Name="Composer" CornerRadius="18" Margin="0,0,0,14" Padding="20,38,20,18"
+              Visibility="Collapsed" IsHitTestVisible="False" KeyboardNavigation.TabNavigation="Cycle">
+        <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
+        <Border.Style>
+          <Style TargetType="Border">
+            <Setter Property="Background" Value="#D9F982"/>
+            <Style.Triggers>
+              <Trigger Property="Tag" Value="blue"><Setter Property="Background" Value="#A6E9FC"/></Trigger>
+              <Trigger Property="Tag" Value="amber"><Setter Property="Background" Value="#FFD39E"/></Trigger>
+              <Trigger Property="Tag" Value="violet"><Setter Property="Background" Value="#DCCBFF"/></Trigger>
+            </Style.Triggers>
+          </Style>
+        </Border.Style>
+        <Grid>
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <TextBlock Foreground="#202719" FontSize="22" FontWeight="SemiBold" Text="添加卡片"/>
+          <Border Grid.Row="1" Margin="0,13,0,13" VerticalAlignment="Center" MinHeight="56"
+                  CornerRadius="14" Background="#66FFFFFF" BorderBrush="#33334037" BorderThickness="1">
+            <Grid>
+              <TextBox x:Name="Draft" Padding="13,12" MaxLength="180" MaxHeight="130"
+                       VerticalContentAlignment="Center" VerticalScrollBarVisibility="Auto"
+                       Foreground="#202719" CaretBrush="#202719" Background="Transparent" BorderThickness="0"
+                       SelectionBrush="#546C50" SelectionOpacity=".48" FocusVisualStyle="{x:Null}"
+                       FontSize="18" TextWrapping="Wrap" AutomationProperties.Name="任务内容"/>
+              <TextBlock Text="输入任务内容…" Margin="13,0,0,0" Foreground="#455445" FontSize="18"
+                         IsHitTestVisible="False" VerticalAlignment="Center">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding Text, ElementName=Draft}" Value="">
+                        <Setter Property="Visibility" Value="Visible"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+              <Border x:Name="DraftFocus" CornerRadius="13" BorderThickness="1.5" BorderBrush="#80506350"
+                      Opacity="0" IsHitTestVisible="False"/>
+            </Grid>
+          </Border>
+          <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="CancelDraft" Style="{StaticResource ComposerButton}" Content="取消" Padding="13,6" Margin="0,0,8,0"
+                    Foreground="#253227" Background="Transparent" BorderBrush="#4C334037"/>
+            <Button x:Name="SaveDraft" Style="{StaticResource ComposerButton}" Content="添加" Padding="14,6" IsDefault="True"
+                    Foreground="#F1F1E9" Background="#29382B" BorderBrush="#29382B"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+      <ContentControl x:Name="AdjacentCard" ContentTemplate="{StaticResource TaskCard}" Visibility="Collapsed"
+                      IsHitTestVisible="False" IsEnabled="False" Focusable="False"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Margin="0,0,0,14">
+        <ContentControl.RenderTransform><TranslateTransform/></ContentControl.RenderTransform>
+      </ContentControl>
+      <Grid x:Name="Front">
+        <Grid.RenderTransform><TranslateTransform/></Grid.RenderTransform>
+        <ContentControl x:Name="ActiveCard" ContentTemplate="{StaticResource TaskCard}"
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Margin="0,0,0,14"/>
+        <Border x:Name="Empty" Background="#D9F982" CornerRadius="18" Margin="0,0,0,14">
+          <Grid>
+            <TextBlock Foreground="#202719" FontSize="17" FontWeight="SemiBold" Text="↑  向上滑添加卡片"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Border Style="{StaticResource WindowGrip}">
+              <Border Width="34" Height="4" CornerRadius="2" HorizontalAlignment="Center"
+                      VerticalAlignment="Center" Background="#49313A30"/>
+            </Border>
+          </Grid>
+        </Border>
+      </Grid>
+    </Grid>
+    <ScrollViewer x:Name="Fan" Visibility="Collapsed" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+      <ScrollViewer.RenderTransform><TranslateTransform/></ScrollViewer.RenderTransform>
+      <ItemsControl x:Name="FanCards" ItemTemplate="{StaticResource FanCard}" Margin="0,0,0,158"/>
+    </ScrollViewer>
+  </Grid>
+  </Grid>
+</Window>
