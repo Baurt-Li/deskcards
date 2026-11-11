@@ -22,13 +22,14 @@ using Forms = System.Windows.Forms;
 [assembly: AssemblyTitle("卡片助手")]
 [assembly: AssemblyProduct("卡片助手")]
 [assembly: AssemblyDescription("悬浮在桌面的每日待办卡片")]
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
 
 public sealed class TaskCard : INotifyPropertyChanged
 {
     private bool done;
     private int theme;
     public DateTime Day { get; set; }
+    public DateTime? CompletedOn { get; set; }
     public string Title { get; set; }
     public int Theme
     {
@@ -459,7 +460,8 @@ internal sealed class CardWindow
 
     private void RefreshCards(int index)
     {
-        dayTasks = data.Tasks.Where(task => task.Day == selected).ToList();
+        dayTasks = data.Tasks.Where(task => task.Day.Date == selected ||
+            (selected == today && task.Day.Date < selected && (!task.Done || task.CompletedOn == selected))).ToList();
         cardIndex = Math.Max(0, Math.Min(index, dayTasks.Count - 1));
         SetCard();
         Element<Border>("Empty").Visibility = dayTasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -904,6 +906,11 @@ internal sealed class CardWindow
 
     private void TaskChanged(object sender, PropertyChangedEventArgs args)
     {
+        if (args.PropertyName == "Done")
+        {
+            var task = (TaskCard)sender;
+            task.CompletedOn = task.Done ? (DateTime?)DateTime.Today : null;
+        }
         SaveChange();
     }
 
@@ -1033,8 +1040,22 @@ internal sealed class CardWindow
         AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window), "\r", false);
         Require(dayTasks.Count == 1 && dayTasks[0].Title == "昨日任务：整理资料", "Enter saves Chinese text on an empty day");
         Require(!MoveCard(1), "A one-card deck stays on the same card");
+        var yesterday = dayTasks[0];
         SelectDay(today);
-        Require(dayTasks.Count == 3 && cardIndex == 0, "Today's tasks remain separate");
+        Require(dayTasks.Count == 4 && dayTasks.Contains(yesterday) && cardIndex == 0,
+            "Unfinished tasks carry into today's view");
+        yesterday.Done = true;
+        RefreshCards(cardIndex);
+        Require(dayTasks.Contains(yesterday) && Read(file).Tasks.Last().CompletedOn == today,
+            "A carried task completed today stays visible and can be reopened");
+        today = today.AddDays(1);
+        SelectDay(today);
+        Require(dayTasks.Count == 3 && !dayTasks.Contains(yesterday),
+            "Completed tasks do not carry into the next day");
+        today = DateTime.Today;
+        yesterday.CompletedOn = yesterday.Day;
+        SaveChange();
+        SelectDay(today);
         TogglePin();
         Require(!window.Topmost && !Read(file).Topmost, "Pin toggles and persists");
         VerifyDocking(preview);
